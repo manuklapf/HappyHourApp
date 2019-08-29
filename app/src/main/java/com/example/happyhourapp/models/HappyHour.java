@@ -24,7 +24,13 @@ public class HappyHour {
      * Get Happy Hour Description as String.
      * @return String
      */
-    public String getHappyHour() {
+    public String getHappyHourDescription() {
         return this.happyHourDesc;
     }
+
+    /**
+     * Get Happy Hour Time as String.
+     * @return String
+     */
+    public ArrayMap<String, String> getHappyTimes() { return this.happyHourTime; }
 }

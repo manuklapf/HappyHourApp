@@ -15,5 +15,5 @@ public class Bar {
     private String description;
     private Location location;
     private String opening_hours;
-    private ArrayMap<String, ArrayMap<String, String>> happy_hours;
+    private ArrayMap<String, HappyHour> happy_hours;
 }
