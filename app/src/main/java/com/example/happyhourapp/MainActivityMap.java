@@ -21,25 +21,32 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
-//import android.os.Bundle;
+import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AlertDialog;
-//import android.util.Log;
-//import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-//import com.google.android.gms.maps.model.LatLng;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
+
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.support.v4.content.ContextCompat;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
+
 
 
 
@@ -62,6 +69,8 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     private LocationManager locationManager;
     private LatLng latLng;
     private boolean isPermission;
+
+    private static final float CAMERA_ZOOM = 11;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -94,11 +103,20 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+        mMap.clear();
 
         if (latLng != null) {
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
+            mMap.addMarker(new MarkerOptions().position(latLng).title("Dein Standort"));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(CAMERA_ZOOM));
         }
+
+        mMap.addMarker(new MarkerOptions()
+                .position(new LatLng(48.9992339, 12.0931658))
+                .title("Universität Regensburg")
+                .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
+
     }
 
     @Override
@@ -254,5 +272,13 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
         return isPermission;
 
+    }
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 }
