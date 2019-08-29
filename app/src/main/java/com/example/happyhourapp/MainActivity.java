@@ -17,9 +17,4 @@ public class MainActivity extends AppCompatActivity {
                 .allowMainThreadQueries()
                 .build();
     }
-
-
-    public void shiiit() {
-
-    }
 }

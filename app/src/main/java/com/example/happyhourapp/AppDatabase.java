@@ -8,5 +8,5 @@ import com.example.happyhourapp.models.Bar;
 
 @Database(entities = {Bar.class}, version = 1)
 public abstract class AppDatabase extends RoomDatabase {
-    public abstract BarDAO getItemDAO();
+    public abstract BarDAO getBarDAO();
 }
