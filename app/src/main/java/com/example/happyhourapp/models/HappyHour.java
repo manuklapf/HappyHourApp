@@ -32,5 +32,5 @@ public class HappyHour {
      * Get Happy Hour Time as String.
      * @return String
      */
-    public ArrayMap<String, String> getHappyTimes() { return this.happyHourTime; }
+    public ArrayMap<String, String> getHappyTime() { return this.happyHourTime; }
 }
