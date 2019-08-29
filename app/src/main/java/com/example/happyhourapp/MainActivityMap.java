@@ -111,7 +111,7 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             mMap.animateCamera(CameraUpdateFactory.zoomTo(CAMERA_ZOOM));
         }
-
+        //Datenbank mit Bar-Objekten einbinden evtl. in eigene Methode auslagern
         mMap.addMarker(new MarkerOptions()
                 .position(new LatLng(48.9992339, 12.0931658))
                 .title("Universität Regensburg")
