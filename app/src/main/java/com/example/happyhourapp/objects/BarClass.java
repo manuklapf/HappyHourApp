@@ -1,4 +1,4 @@
-package com.example.happyhourapp;
+package com.example.happyhourapp.objects;
 
 public class BarClass {
 
