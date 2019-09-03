@@ -5,15 +5,15 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Update;
 
-import com.example.happyhourapp.models.Bar;
+import com.example.happyhourapp.models.Bars;
 
 @Dao
 public interface BarDAO {
 
     @Insert
-    public void insert(Bar... bars);
+    public void insert(Bars... bars);
     @Update
-    public void update(Bar... bars);
+    public void update(Bars... bars);
     @Delete
-    public void delete(Bar bar);
+    public void delete(Bars bars);
 }
