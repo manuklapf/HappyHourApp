@@ -12,4 +12,13 @@ public class BarsAndAllHappyHours {
 
     @Relation(parentColumn = "id", entityColumn = "barId", entity = HappyHour.class)
     public List<HappyHour> happy_hours;
+
+    //Getters
+    public Bars getBars() {
+        return bars;
+    }
+
+    public List<HappyHour> getHappy_hours() {
+        return happy_hours;
+    }
 }
