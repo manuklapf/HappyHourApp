@@ -13,7 +13,7 @@ public class Bars {
 
     @PrimaryKey(autoGenerate = true)
     @ColumnInfo(name = "id")
-    private int bar_id;
+    private int barId;
 
     @ColumnInfo(name = "name")
     private String name;
@@ -24,12 +24,12 @@ public class Bars {
     @Embedded
     private BarLocation location;
 
-    @ColumnInfo(name = "opening_hours")
-    private String opening_hours;
+    @ColumnInfo(name = "openingHours")
+    private String openingHours;
 
     //Getters
-    public int getBar_id() {
-        return bar_id;
+    public int getBarId() {
+        return barId;
     }
 
     public String getName() {
@@ -44,13 +44,13 @@ public class Bars {
         return location;
     }
 
-    public String getOpening_hours() {
-        return opening_hours;
+    public String getOpeningHours() {
+        return openingHours;
     }
 
     //Setters
-    public void setBar_id(int bar_id) {
-        this.bar_id = bar_id;
+    public void setBarId(int barId) {
+        this.barId = barId;
     }
 
     public void setName(String name) {
@@ -65,7 +65,7 @@ public class Bars {
         this.location = location;
     }
 
-    public void setOpening_hours(String opening_hours) {
-        this.opening_hours = opening_hours;
+    public void setOpeningHours(String openingHours) {
+        this.openingHours = openingHours;
     }
 }

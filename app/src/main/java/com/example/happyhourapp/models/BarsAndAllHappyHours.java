@@ -11,14 +11,14 @@ public class BarsAndAllHappyHours {
     public Bars bars;
 
     @Relation(parentColumn = "id", entityColumn = "barId", entity = HappyHour.class)
-    public List<HappyHour> happy_hours;
+    public List<HappyHour> happyHours;
 
     //Getters
     public Bars getBars() {
         return bars;
     }
 
-    public List<HappyHour> getHappy_hours() {
-        return happy_hours;
+    public List<HappyHour> getHappyHours() {
+        return happyHours;
     }
 }

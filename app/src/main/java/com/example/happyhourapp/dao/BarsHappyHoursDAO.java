@@ -11,5 +11,5 @@ public interface BarsHappyHoursDAO {
 
     @Transaction
     @Query("SELECT * FROM Bars WHERE id = :barId")
-    BarsAndAllHappyHours loadBarsAndAllHappyHours(long barId);
+    BarsAndAllHappyHours loadBarsAndAllHappyHours(int barId);
 }

@@ -2,14 +2,14 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "bfcf53b695c6b66919d396dccb7d830b",
+    "identityHash": "4a3fde8353e4fd0f414cf4ea4ee6829b",
     "entities": [
       {
         "tableName": "bars",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `opening_hours` TEXT, `latitude` REAL, `longitude` REAL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `openingHours` TEXT, `latitude` REAL, `longitude` REAL)",
         "fields": [
           {
-            "fieldPath": "bar_id",
+            "fieldPath": "barId",
             "columnName": "id",
             "affinity": "INTEGER",
             "notNull": true
@@ -27,8 +27,8 @@
             "notNull": false
           },
           {
-            "fieldPath": "opening_hours",
-            "columnName": "opening_hours",
+            "fieldPath": "openingHours",
+            "columnName": "openingHours",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -102,7 +102,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bfcf53b695c6b66919d396dccb7d830b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4a3fde8353e4fd0f414cf4ea4ee6829b')"
     ]
   }
 }
