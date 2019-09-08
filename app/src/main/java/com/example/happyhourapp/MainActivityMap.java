@@ -110,12 +110,20 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             mMap.animateCamera(CameraUpdateFactory.zoomTo(CAMERA_ZOOM));
         }
+        customMarker();
+    }
+
+    public void customMarker (Datenabank){
         //Datenbank mit Bar-Objekten einbinden evtl. in eigene Methode auslagern
-        mMap.addMarker(new MarkerOptions()
-                .position(new LatLng(48.9992339, 12.0931658))
-                .title("Universität Regensburg")
+        for (int i =0; i<Datenbanklänge; i++){
+            mMap.addMarker(new MarkerOptions()
+                .position(Position aus datenbank an stelle i/*new LatLng(48.9992339, 12.0931658)*/)
+                .title(Name der Bar aus DB an stelle i/*"Mälze"*/)
+                .snippet(Öffnungszeiten der bar aus bd an stelle i/*"Mo-Do+So: 18-23 Uhr & Fr+Sa: 18-24 Uhr"*/)
+                .snippet(Happy-Hour-Zeit der  bar aus der datenbank an stelle i /*"18-19 Uhr"*/
                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_VIOLET)));
 
+        }
     }
 
     @Override
