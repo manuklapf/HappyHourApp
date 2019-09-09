@@ -1,9 +1,11 @@
 package com.example.happyhourapp;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -24,27 +26,19 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.karumi.dexter.Dexter;
+import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
-import com.karumi.dexter.listener.PermissionDeniedResponse;
-import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
-import com.karumi.dexter.listener.single.PermissionListener;
+import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
-//import android.os.Bundle;
-//import android.util.Log;
-//import android.widget.TextView;
-//import com.google.android.gms.maps.model.LatLng;
+import java.util.List;
 
 
-
-public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private GoogleMap mMap;
 
@@ -55,14 +49,13 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     private Location mLocation;
     private LocationManager mLocationManager;
     private LocationRequest mLocationRequest;
-    private com.google.android.gms.location.LocationListener listener;
+    private LocationService listener;
     private long UPDATE_INTERVAL = 2 * 1000;  /* 10 secs */
     private long FASTEST_INTERVAL = 20000; /* 20 sec */
     private static int MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION = 1;
 
-    private LocationManager locationManager;
-    private LatLng latLng;
-    private boolean isPermission;
+    private BroadcastReceiver broadcastReceiver;
+    private boolean isPermissions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,9 +64,8 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
         AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "AppDatabase").build();
 
-        if (requestSinglePermission()) {
+        if (requestLocationPermissions()) {
             // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-            //it was pre written
             SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
@@ -88,20 +80,29 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                     .build();
 
             mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-
-            checkLocation(); //check whether location service is enable or not in your  phone
         }
 
+        startLocationService();
     }
+
+    /**
+     * Start location service to fetch own location data.
+     */
+    private void startLocationService() {
+        Intent i = new Intent(getApplicationContext(), com.example.happyhourapp.LocationService.class);
+        startService(i);
+    }
+
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        if (latLng != null) {
-            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
-            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-        }
+        //todo orientier dich mal daran
+//        if (latLng != null) {
+//            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
+//            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+//        }
     }
 
     @Override
@@ -142,23 +143,54 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         Log.i(TAG, "Connection failed. Error: " + connectionResult.getErrorCode());
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        String msg = "Updated Location: " +
-                Double.toString(location.getLatitude()) + "," +
-                Double.toString(location.getLongitude());
-        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
-        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-        // You can now create a LatLng Object for use with maps
-        latLng = new LatLng(location.getLatitude(), location.getLongitude());
+//    @Override
+//    public void onLocationChanged(Location location) {
+//        String msg = "Updated Location: " +
+//                Double.toString(location.getLatitude()) + "," +
+//                Double.toString(location.getLongitude());
+//        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
+//        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
+//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+//        // You can now create a LatLng Object for use with maps
+//        latLng = new LatLng(location.getLatitude(), location.getLongitude());
+//
+//        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+//        //it was pre written
+//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+//                .findFragmentById(R.id.map);
+//        mapFragment.getMapAsync(this);
+//    }
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        //it was pre written
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
+    //broadcast receiver is initialized
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //falls es keinen Broadcastreceiver gibt wird hier einer erstellt
+        if(broadcastReceiver == null){
+            broadcastReceiver = new BroadcastReceiver() {
+
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    //Koordinaten werden im Textview gespeichert (wird später geändert)
+                    //textView.append("\n" +intent.getExtras().get("Coordinates"));
+
+                }
+            };
+        }
+        registerReceiver(broadcastReceiver,new IntentFilter("location_update"));
     }
+
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //broadcastreceiver wird beendet wenn die App geschlossen wird
+        if(broadcastReceiver != null){
+            unregisterReceiver(broadcastReceiver);
+        }
+    }
+
+
 
     protected void startLocationUpdates() {
         // Create the location request
@@ -174,8 +206,8 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                 ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION );
             }return;
         }
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
-                mLocationRequest, this);
+//        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
+//                mLocationRequest, this);
         Log.d("reque", "--->>>>");
     }
 
@@ -195,11 +227,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         }
     }
 
-    private boolean checkLocation() {
-        if (!isLocationEnabled())
-            showAlert();
-        return isLocationEnabled();
-    }
 
     private void showAlert() {
         final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
@@ -223,39 +250,42 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         dialog.show();
     }
 
-    private boolean isLocationEnabled() {
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-    }
 
-    private boolean requestSinglePermission() {
+    /**
+     * Check Permissions for Map and GPS usage.
+     * @return boolean
+     */
+    private boolean requestLocationPermissions() {
 
         Dexter.withActivity(this)
-                .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                .withListener(new PermissionListener() {
+                .withPermissions(Manifest.permission.ACCESS_FINE_LOCATION,   Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withListener(new MultiplePermissionsListener() {
                     @Override
-                    public void onPermissionGranted(PermissionGrantedResponse response) {
-                        //Single Permission is granted
-                        Toast.makeText(MainActivityMap.this, "Single permission is granted!", Toast.LENGTH_SHORT).show();
-                        isPermission = true;
-                    }
+                    public void onPermissionsChecked(MultiplePermissionsReport report) {
+                        // check if all permissions are granted
+                        if (report.areAllPermissionsGranted()) {
+                            // permission granted
+                            Toast.makeText(MainActivityMap.this, "Location permissions granted!", Toast.LENGTH_SHORT).show();
+                            isPermissions = true;
+                        }
 
-                    @Override
-                    public void onPermissionDenied(PermissionDeniedResponse response) {
-                        // check for permanent denial of permission
-                        if (response.isPermanentlyDenied()) {
-                            isPermission = false;
+                        // check for permanent denial of any permission
+                        if (report.isAnyPermissionPermanentlyDenied()) {
+                            // permission is denied permanently
+                            isPermissions = false;
+                            Toast.makeText(MainActivityMap.this, "Location permissions not granted, please grant permissions in app settings!", Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
-                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                    public void onPermissionRationaleShouldBeShown(List<PermissionRequest> permissions, PermissionToken token) {
                         token.continuePermissionRequest();
                     }
-                }).check();
+                })
+                .onSameThread()
+                .check();
 
-        return isPermission;
+        return isPermissions;
 
     }
 }
