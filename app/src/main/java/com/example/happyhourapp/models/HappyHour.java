@@ -3,10 +3,10 @@ package com.example.happyhourapp.models;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "happy_hour")
+@Entity(tableName = "happyhour")
 public class HappyHour {
 
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey
     private int happyHourId;
     private int barId;
     private String happyHourDay;

@@ -3,6 +3,7 @@ package com.example.happyhourapp.dao;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.Query;
 import androidx.room.Update;
 
 import com.example.happyhourapp.models.HappyHour;
@@ -17,4 +18,7 @@ public interface HappyHourDAO {
 
     @Delete
     public void delete(HappyHour HappyHour);
+
+    @Query("SELECT * FROM HappyHour")
+    public HappyHour[] loadAllHappyHours();
 }

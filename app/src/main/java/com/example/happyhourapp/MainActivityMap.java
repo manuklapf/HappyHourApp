@@ -19,6 +19,7 @@ import android.widget.Toast;
 
 import com.example.happyhourapp.models.Bar;
 import com.example.happyhourapp.models.BarAndAllHappyHours;
+import com.example.happyhourapp.models.HappyHour;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
@@ -107,16 +108,46 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(this));
+
         AppDatabase db = initDatabase();
 
+        HappyHour[] happyHours = db.happyHourDAO().loadAllHappyHours();
         Bar[] bars = db.barDAO().loadAllBars();
 
         if (bars != null) {
+            StringBuilder stringBuilder = new StringBuilder();
+
             for (Bar bar: bars) {
+                for (HappyHour happyHour: happyHours) {
+                    if (happyHour.getBarId() == bar.getBarId()) {
+                        stringBuilder.append("Day: " + happyHour.getHappyHourDay() + "\n" +
+                                             "Time: " + happyHour.getHappyHourTime() + "\n" +
+                                             "Description: " + happyHour.getHappyHourTime() + "\n"
+                                );
+                    }
+                }
                 double barLat = bar.getLocation().getLatitude();
                 double barLng = bar.getLocation().getLongitude();
                 LatLng latLng = new LatLng(barLat, barLng);
-                mMap.addMarker(new MarkerOptions().position(latLng).title(bar.getName()));
+
+                try{
+                    String snippet =
+                            "Address: " + bar.getAddress() + "\n" +
+                            "Opening Hours: " + bar.getOpeningHours() + "\n" +
+                            "Features: " + bar.getDescription() + "\n" +
+                            "Happy Hours: " + stringBuilder.toString() + "\n";
+
+                    MarkerOptions options = new MarkerOptions()
+                            .position(latLng)
+                            .title(bar.getName())
+                            .snippet(snippet);
+
+                    mMap.addMarker(options);
+
+                }catch (NullPointerException e){
+                    Log.e(TAG, "moveCamera: NullPointerException: " + e.getMessage() );
+                }
                 mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
             }
         }
@@ -124,26 +155,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
     }
 
-
-    /**
-     * Init Mock Bar Markers.
-     */
-    private void initBarMarkers() {
-        ArrayList<LatLng> latLngs = new ArrayList<>();
-
-        for (BarAndAllHappyHours bar: this.bars){
-            double barLat = bar.getBar().getLocation().getLatitude();
-            double barLng = bar.getBar().getLocation().getLongitude();
-            if (barLat != 0 && barLng != 0) {
-                LatLng latLng = new LatLng(barLat, barLng);
-                this.mMap.addMarker(new MarkerOptions().position(latLng));
-                this.mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-            }
-            else {
-                Log.e(TAG, "Error with bar location");
-            }
-        }
-    }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {

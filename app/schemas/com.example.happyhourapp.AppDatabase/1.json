@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "124a4dd01778dcb3ee88cf09cdaa40a3",
+    "identityHash": "1d46942d394501c5cde988123a93c1c8",
     "entities": [
       {
         "tableName": "bar",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT, `description` TEXT, `openingHours` TEXT, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT, `description` TEXT, `address` TEXT, `openingHours` TEXT, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "barId",
@@ -23,6 +23,12 @@
           {
             "fieldPath": "description",
             "columnName": "description",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
             "affinity": "TEXT",
             "notNull": false
           },
@@ -55,8 +61,8 @@
         "foreignKeys": []
       },
       {
-        "tableName": "happy_hour",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`happyHourId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `barId` INTEGER NOT NULL, `happyHourDay` TEXT, `happyHourTime` TEXT, `happyHourDesc` TEXT)",
+        "tableName": "happyhour",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`happyHourId` INTEGER NOT NULL, `barId` INTEGER NOT NULL, `happyHourDay` TEXT, `happyHourTime` TEXT, `happyHourDesc` TEXT, PRIMARY KEY(`happyHourId`))",
         "fields": [
           {
             "fieldPath": "happyHourId",
@@ -93,7 +99,7 @@
           "columnNames": [
             "happyHourId"
           ],
-          "autoGenerate": true
+          "autoGenerate": false
         },
         "indices": [],
         "foreignKeys": []
@@ -102,7 +108,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '124a4dd01778dcb3ee88cf09cdaa40a3')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '1d46942d394501c5cde988123a93c1c8')"
     ]
   }
 }

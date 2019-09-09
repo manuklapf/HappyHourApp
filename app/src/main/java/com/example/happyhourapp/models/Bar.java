@@ -24,6 +24,9 @@ public class Bar {
     @Embedded
     private BarLocation location;
 
+    @ColumnInfo(name = "address")
+    private String address;
+
     @ColumnInfo(name = "openingHours")
     private String openingHours;
 
@@ -54,6 +57,10 @@ public class Bar {
         return openingHours;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
     //Setters
     public void setBarId(int barId) {
         this.barId = barId;
@@ -73,6 +80,10 @@ public class Bar {
 
     public void setOpeningHours(String openingHours) {
         this.openingHours = openingHours;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 
     //populate on first run
