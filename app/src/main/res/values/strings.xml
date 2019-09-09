@@ -1,11 +1,5 @@
 <resources>
     <string name="app_name">Happy Hour App</string>
 
-    <string name="mon">Monday</string>
-    <string name="tue">Tuesday</string>
-    <string name="wed">Wednesday</string>
-    <string name="thu">Thursday</string>
-    <string name="fri">Friday</string>
-    <string name="sat">Saturday</string>
-    <string name="sun">Sunday</string>
+    <string name="error_database_bars">BarsAndAllHappyHours could not be fetched from database!</string>
 </resources>

@@ -5,6 +5,11 @@ public class BarLocation {
     private double latitude;
     private double longitude;
 
+    public BarLocation(double latitude, double longitude) {
+        this.latitude = latitude;
+        this.longitude = longitude;
+    }
+
     //Getters
     public double getLatitude() {
         return latitude;

@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "4a3fde8353e4fd0f414cf4ea4ee6829b",
+    "identityHash": "124a4dd01778dcb3ee88cf09cdaa40a3",
     "entities": [
       {
-        "tableName": "bars",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `openingHours` TEXT, `latitude` REAL, `longitude` REAL)",
+        "tableName": "bar",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT, `description` TEXT, `openingHours` TEXT, `latitude` REAL, `longitude` REAL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "barId",
@@ -49,7 +49,7 @@
           "columnNames": [
             "id"
           ],
-          "autoGenerate": true
+          "autoGenerate": false
         },
         "indices": [],
         "foreignKeys": []
@@ -102,7 +102,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '4a3fde8353e4fd0f414cf4ea4ee6829b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '124a4dd01778dcb3ee88cf09cdaa40a3')"
     ]
   }
 }

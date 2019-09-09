@@ -3,44 +3,44 @@ package com.example.happyhourapp;
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.room.Room;
-
+import com.example.happyhourapp.models.Bar;
+import com.example.happyhourapp.models.BarAndAllHappyHours;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    private GoogleMap mMap;
 
     private static final String TAG = "MainActivity";
     private TextView mLatitudeTextView;
@@ -56,22 +56,19 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
     private BroadcastReceiver broadcastReceiver;
     private boolean isPermissions;
+    private ArrayList<BarAndAllHappyHours> bars;
+    private GoogleMap mMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_map);
 
-        AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "AppDatabase").build();
-
         if (requestLocationPermissions()) {
             // Obtain the SupportMapFragment and get notified when the map is ready to be used.
             SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
-
-            mLatitudeTextView = findViewById((R.id.latitude_textview));
-            mLongitudeTextView = findViewById((R.id.longitude_textview));
 
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -85,6 +82,19 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         startLocationService();
     }
 
+    private AppDatabase initDatabase() {
+            AppDatabase db;
+            try {
+                db = AppDatabase.getAppDatabase(this);
+                return db;
+            } catch (Exception e) {
+                Log.e(TAG, "database problem!");
+                e.printStackTrace();
+                return null;
+            }
+
+    }
+
     /**
      * Start location service to fetch own location data.
      */
@@ -93,16 +103,46 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         startService(i);
     }
 
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        //todo orientier dich mal daran
-//        if (latLng != null) {
-//            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
-//            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-//        }
+        AppDatabase db = initDatabase();
+
+        Bar[] bars = db.barDAO().loadAllBars();
+
+        if (bars != null) {
+            for (Bar bar: bars) {
+                double barLat = bar.getLocation().getLatitude();
+                double barLng = bar.getLocation().getLongitude();
+                LatLng latLng = new LatLng(barLat, barLng);
+                mMap.addMarker(new MarkerOptions().position(latLng).title(bar.getName()));
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            }
+        }
+
+
+    }
+
+
+    /**
+     * Init Mock Bar Markers.
+     */
+    private void initBarMarkers() {
+        ArrayList<LatLng> latLngs = new ArrayList<>();
+
+        for (BarAndAllHappyHours bar: this.bars){
+            double barLat = bar.getBar().getLocation().getLatitude();
+            double barLng = bar.getBar().getLocation().getLongitude();
+            if (barLat != 0 && barLng != 0) {
+                LatLng latLng = new LatLng(barLat, barLng);
+                this.mMap.addMarker(new MarkerOptions().position(latLng));
+                this.mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+            }
+            else {
+                Log.e(TAG, "Error with bar location");
+            }
+        }
     }
 
     @Override
@@ -125,8 +165,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         }
         if (mLocation != null) {
 
-            // mLatitudeTextView.setText(String.valueOf(mLocation.getLatitude()));
-            //mLongitudeTextView.setText(String.valueOf(mLocation.getLongitude()));
         } else {
             Toast.makeText(this, "Location not Detected", Toast.LENGTH_SHORT).show();
         }
@@ -142,24 +180,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         Log.i(TAG, "Connection failed. Error: " + connectionResult.getErrorCode());
     }
-
-//    @Override
-//    public void onLocationChanged(Location location) {
-//        String msg = "Updated Location: " +
-//                Double.toString(location.getLatitude()) + "," +
-//                Double.toString(location.getLongitude());
-//        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
-//        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-//        // You can now create a LatLng Object for use with maps
-//        latLng = new LatLng(location.getLatitude(), location.getLongitude());
-//
-//        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-//        //it was pre written
-//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-//                .findFragmentById(R.id.map);
-//        mapFragment.getMapAsync(this);
-//    }
 
     //broadcast receiver is initialized
     @Override
@@ -227,28 +247,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         }
     }
 
-
-    private void showAlert() {
-        final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("Enable Location")
-                .setMessage("Your Locations Settings is set to 'Off'.\nPlease Enable Location to " +
-                        "use this app")
-                .setPositiveButton("Location Settings", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                        Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                        startActivity(myIntent);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                    }
-                });
-        dialog.show();
-    }
 
 
     /**
