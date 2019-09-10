@@ -3,44 +3,53 @@ package com.example.happyhourapp;
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.room.Room;
-
+import com.example.happyhourapp.models.Bar;
+import com.example.happyhourapp.models.HappyHour;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
+import java.io.IOException;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Locale;
 
 
-public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MainActivityMap extends FragmentActivity implements AdapterView.OnItemSelectedListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
-    private GoogleMap mMap;
 
     private static final String TAG = "MainActivity";
     private TextView mLatitudeTextView;
@@ -56,22 +65,21 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
     private BroadcastReceiver broadcastReceiver;
     private boolean isPermissions;
+    private GoogleMap mMap;
+    private String selectedDay;
+    private HappyHour[] happyHours;
+    private Bar[] bars;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_map);
 
-        AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "AppDatabase").build();
-
         if (requestLocationPermissions()) {
             // Obtain the SupportMapFragment and get notified when the map is ready to be used.
             SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
-
-            mLatitudeTextView = findViewById((R.id.latitude_textview));
-            mLongitudeTextView = findViewById((R.id.longitude_textview));
 
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
@@ -82,7 +90,81 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         }
 
+        //Initialize Weekday Dropdown
+        Spinner spinner = (Spinner) findViewById(R.id.spinner);
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.weekdays_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(this);
+
+        selectedDay = getWeekday();
+
+        if (selectedDay.length() != 0) {
+            int spinnerPosition = adapter.getPosition(selectedDay);
+            spinner.setSelection(spinnerPosition);
+        }
+
         startLocationService();
+    }
+
+    /**
+     * Get current weekday as String
+     *
+     * @return String
+     */
+    private String getWeekday() {
+        Calendar calendar = Calendar.getInstance();
+        int day = calendar.get(Calendar.DAY_OF_WEEK);
+        String currentDay;
+
+        switch (day) {
+            case Calendar.MONDAY:
+                currentDay = "Monday";
+                break;
+            case Calendar.TUESDAY:
+                currentDay = "Tuesday";
+                break;
+            case Calendar.WEDNESDAY:
+                currentDay = "Wednesday";
+                break;
+            case Calendar.THURSDAY:
+                currentDay = "Thursday";
+                break;
+            case Calendar.FRIDAY:
+                currentDay = "Friday";
+                break;
+            case Calendar.SATURDAY:
+                currentDay = "Saturday";
+                break;
+            case Calendar.SUNDAY:
+                currentDay = "Sunday";
+                break;
+            default:
+                return "";
+        }
+        return currentDay;
+    }
+
+    /**
+     * Inits Database
+     *
+     * @return AppDatabase
+     */
+    private AppDatabase initDatabase() {
+        AppDatabase db;
+        try {
+            db = AppDatabase.getAppDatabase(this);
+            return db;
+        } catch (Exception e) {
+            Log.e(TAG, "database problem!");
+            e.printStackTrace();
+            return null;
+        }
+
     }
 
     /**
@@ -93,17 +175,111 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         startService(i);
     }
 
-
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        //todo orientier dich mal daran
-//        if (latLng != null) {
-//            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
-//            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-//        }
+        mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(this));
+
+        AppDatabase db = initDatabase();
+
+        //normally database actions wouldn't be executed on the UI thread, but because it's a small one time start operation, we went with it.
+        this.happyHours = db.happyHourDAO().loadAllHappyHours();
+        this.bars = db.barDAO().loadAllBars();
+
+        if (bars != null) {
+            for (Bar bar : this.bars) {
+                String happyHourText = createHappyHourInfoForBar(this.happyHours, this.selectedDay, bar);
+
+                LatLng latLng = getBarLatLng(bar);
+
+                String address = getBarAddress(latLng);
+
+                //set text of custom window view
+                String snippet =
+                        "Address: " + address + "\n" +
+                                "Opening Hours: " + bar.getOpeningHours() + "\n" +
+                                "Features: " + bar.getDescription() + "\n" +
+                                "Happy Hours: " + happyHourText + "\n";
+
+                Marker mMarker = updateMarker(bar, latLng, snippet);
+
+                if (mMarker != null) {
+                    if (happyHourText.length() == 0) {
+                        mMarker.setVisible(false);
+                    } else {
+                        mMarker.setVisible(true);
+                    }
+                }
+            }
+        }
     }
+
+    private String getBarAddress(LatLng latLng) {
+        Geocoder geocoder;
+        List<Address> addresses;
+        geocoder = new Geocoder(this, Locale.getDefault());
+        String address = "";
+        try {
+            addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1); // Here 1 represent max location result to returned, by documents it recommended 1 to 5
+            address = addresses.get(0).getAddressLine(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (address.length() == 0) {
+            address = " - ";
+        }
+
+        return address;
+    }
+
+    private LatLng getBarLatLng(Bar bar) {
+        double barLat = bar.getLocation().getLatitude();
+        double barLng = bar.getLocation().getLongitude();
+        return new LatLng(barLat, barLng);
+    }
+
+    private Marker updateMarker(Bar bar, LatLng latLng, String snippet) {
+        Marker mMarker;
+        try {
+
+            //set marker options
+            MarkerOptions options = new MarkerOptions()
+                    .position(latLng)
+                    .title(bar.getName())
+                    .snippet(snippet);
+
+            mMarker = mMap.addMarker(options);
+
+
+        } catch (NullPointerException e) {
+            Log.e(TAG, "moveCamera: NullPointerException: " + e.getMessage());
+            return null;
+        }
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
+        return mMarker;
+    }
+
+    private String createHappyHourInfoForBar(HappyHour[] happyHours, String selectedDay, Bar bar) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        //create Happy Hours Info for selected day
+        if (happyHours != null) {
+            for (HappyHour happyHour : happyHours) {
+                if (happyHour.getBarId() == bar.getBarId() && happyHour.getHappyHourDay().equals(selectedDay)) {
+                    stringBuilder.append("\n" + "Day: " + happyHour.getHappyHourDay() + "\n" +
+                            "Time: " + happyHour.getHappyHourTime() + "\n" +
+                            "Description: " + happyHour.getHappyHourDesc() + "\n"
+                    );
+                }
+            }
+            if (stringBuilder.toString().length() != 0) {
+                return stringBuilder.toString();
+            }
+        }
+        return "";
+    }
+
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
@@ -111,7 +287,7 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
             } else {
-                ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION );
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
             }
             return;
         }
@@ -125,8 +301,6 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         }
         if (mLocation != null) {
 
-            // mLatitudeTextView.setText(String.valueOf(mLocation.getLatitude()));
-            //mLongitudeTextView.setText(String.valueOf(mLocation.getLongitude()));
         } else {
             Toast.makeText(this, "Location not Detected", Toast.LENGTH_SHORT).show();
         }
@@ -143,30 +317,12 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         Log.i(TAG, "Connection failed. Error: " + connectionResult.getErrorCode());
     }
 
-//    @Override
-//    public void onLocationChanged(Location location) {
-//        String msg = "Updated Location: " +
-//                Double.toString(location.getLatitude()) + "," +
-//                Double.toString(location.getLongitude());
-//        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
-//        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-//        // You can now create a LatLng Object for use with maps
-//        latLng = new LatLng(location.getLatitude(), location.getLongitude());
-//
-//        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-//        //it was pre written
-//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-//                .findFragmentById(R.id.map);
-//        mapFragment.getMapAsync(this);
-//    }
-
     //broadcast receiver is initialized
     @Override
     protected void onResume() {
         super.onResume();
         //falls es keinen Broadcastreceiver gibt wird hier einer erstellt
-        if(broadcastReceiver == null){
+        if (broadcastReceiver == null) {
             broadcastReceiver = new BroadcastReceiver() {
 
                 @Override
@@ -177,7 +333,7 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                 }
             };
         }
-        registerReceiver(broadcastReceiver,new IntentFilter("location_update"));
+        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
     }
 
 
@@ -185,11 +341,10 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     protected void onDestroy() {
         super.onDestroy();
         //broadcastreceiver wird beendet wenn die App geschlossen wird
-        if(broadcastReceiver != null){
+        if (broadcastReceiver != null) {
             unregisterReceiver(broadcastReceiver);
         }
     }
-
 
 
     protected void startLocationUpdates() {
@@ -203,8 +358,9 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
             } else {
-                ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION );
-            }return;
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
+            }
+            return;
         }
 //        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
 //                mLocationRequest, this);
@@ -228,37 +384,15 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     }
 
 
-    private void showAlert() {
-        final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("Enable Location")
-                .setMessage("Your Locations Settings is set to 'Off'.\nPlease Enable Location to " +
-                        "use this app")
-                .setPositiveButton("Location Settings", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                        Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                        startActivity(myIntent);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                    }
-                });
-        dialog.show();
-    }
-
-
     /**
      * Check Permissions for Map and GPS usage.
+     *
      * @return boolean
      */
     private boolean requestLocationPermissions() {
 
         Dexter.withActivity(this)
-                .withPermissions(Manifest.permission.ACCESS_FINE_LOCATION,   Manifest.permission.ACCESS_COARSE_LOCATION)
+                .withPermissions(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
                 .withListener(new MultiplePermissionsListener() {
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport report) {
@@ -286,6 +420,50 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                 .check();
 
         return isPermissions;
+
+    }
+
+    @Override
+    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l) {
+        String sSelected = adapterView.getItemAtPosition(i).toString();
+        this.selectedDay = sSelected;
+
+        mMap.clear();
+        //refresh every happy hour description and set new markers
+        if (this.bars != null) {
+            for (Bar bar : this.bars) {
+                String happyHourText = createHappyHourInfoForBar(this.happyHours, selectedDay, bar);
+
+                LatLng latLng = getBarLatLng(bar);
+                String address = getBarAddress(latLng);
+
+                //set text of custom window view
+                String snippet =
+                        "Address: " + address + "\n" +
+                                "Opening Hours: " + bar.getOpeningHours() + "\n" +
+                                "Features: " + bar.getDescription() + "\n" +
+                                "Happy Hours: " + happyHourText;
+
+
+                Marker mMarker = updateMarker(bar, latLng, "");
+
+                if (mMarker != null) {
+                    mMarker.setSnippet(snippet);
+
+                    if (happyHourText.length() == 0) {
+                        mMarker.setVisible(false);
+                    } else {
+                        mMarker.setVisible(true);
+                    }
+                }
+            }
+        }
+
+        Toast.makeText(this, sSelected, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {
 
     }
 }
