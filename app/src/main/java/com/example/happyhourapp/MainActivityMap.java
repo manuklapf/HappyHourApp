@@ -553,7 +553,7 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             }
         }
         //reset usermarker
-        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
     }
 
     @Override
