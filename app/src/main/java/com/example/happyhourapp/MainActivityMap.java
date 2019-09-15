@@ -391,7 +391,7 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             userMarker.remove();
         }
         MyCoordinates = new LatLng(location.getLatitude(), location.getLongitude());
-        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
         mMap.animateCamera(CameraUpdateFactory.newLatLng(MyCoordinates));
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -552,8 +552,13 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
                 }
             }
         }
+        if (MyCoordinates == null) {
+            MyCoordinates = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+        }
+
         //reset usermarker
-        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+
     }
 
     @Override
