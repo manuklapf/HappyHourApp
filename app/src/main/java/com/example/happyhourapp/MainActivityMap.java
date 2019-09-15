@@ -1,68 +1,74 @@
 package com.example.happyhourapp;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
+import android.annotation.SuppressLint;
+import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Criteria;
+import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import androidx.room.Room;
+import android.location.LocationListener;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.GeofencingRequest;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.karumi.dexter.Dexter;
 import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
-public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
+public class MainActivityMap extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
 
+    protected ArrayList<Geofence> mGeofenceList;
     private GoogleMap mMap;
-
+    Marker userMarker;
+    private LatLng MyCoordinates;
     private static final String TAG = "MainActivity";
-    private TextView mLatitudeTextView;
-    private TextView mLongitudeTextView;
     private GoogleApiClient mGoogleApiClient;
     private Location mLocation;
     private LocationManager mLocationManager;
-    private LocationRequest mLocationRequest;
-    private LocationService listener;
-    private long UPDATE_INTERVAL = 2 * 1000;  /* 10 secs */
-    private long FASTEST_INTERVAL = 20000; /* 20 sec */
     private static int MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION = 1;
-
-    private BroadcastReceiver broadcastReceiver;
     private boolean isPermissions;
+    private GeofencingClient geofencingClient;
+    private PendingIntent geofencePendingIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main_map);
 
-        AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "AppDatabase").build();
+        //AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "AppDatabase").build();
 
         if (requestLocationPermissions()) {
             // Obtain the SupportMapFragment and get notified when the map is ready to be used.
@@ -70,16 +76,18 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                     .findFragmentById(R.id.map);
             mapFragment.getMapAsync(this);
 
-            mLatitudeTextView = findViewById((R.id.latitude_textview));
-            mLongitudeTextView = findViewById((R.id.longitude_textview));
 
             mGoogleApiClient = new GoogleApiClient.Builder(this)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
-
+            mGoogleApiClient.connect();
             mLocationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+            requestLocation();
+            geofencingClient = LocationServices.getGeofencingClient(this);
+            mGeofenceList = new ArrayList<Geofence>();
+            populateGeofenceList();
         }
 
         startLocationService();
@@ -97,12 +105,59 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
+        //only usable on real devices
+        //@SuppressLint("MissingPermission") Location mLocation = mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+        //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLocation.getLatitude(),mLocation.getLongitude()),16.0f));
+    }
 
-        //todo orientier dich mal daran
-//        if (latLng != null) {
-//            mMap.addMarker(new MarkerOptions().position(latLng).title("Marker in Current Location"));
-//            mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
-//        }
+    private void addGeofences() {
+        if (!mGoogleApiClient.isConnected()) {
+            Toast.makeText(this, "Google API Client not connected!", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            LocationServices.GeofencingApi.addGeofences(
+                    mGoogleApiClient,
+                    getGeofencingRequest(),
+                    getGeofencePendingIntent()
+            ).setResultCallback(this); // Result processed in onResult().
+        } catch (SecurityException securityException) {
+            // Catch exception generated if the app does not use ACCESS_FINE_LOCATION permission.
+        }
+    }
+
+    private PendingIntent getGeofencePendingIntent() {
+        if (geofencePendingIntent != null) {
+            return geofencePendingIntent;
+        }
+        Intent intent = new Intent(this, GeofenceBroadcastReceiver.class);
+        PendingIntent geofencePendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+        return geofencePendingIntent;
+    }
+
+    private GeofencingRequest getGeofencingRequest() {
+        GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
+        //doesn't trigger notifications if user is in a geofenced zone on startup
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_DWELL);
+        builder.addGeofences(mGeofenceList);
+        return builder.build();
+    }
+
+    private void populateGeofenceList() {
+        //adds Geofences from Constants
+        for (Map.Entry<String, LatLng> entry : Constants.LANDMARKS.entrySet()) {
+            mGeofenceList.add(new Geofence.Builder()
+                    .setRequestId(entry.getKey())
+                    .setCircularRegion(
+                            entry.getValue().latitude,
+                            entry.getValue().longitude,
+                            Constants.GEOFENCE_RADIUS_IN_METERS
+                    )
+                    .setExpirationDuration(Constants.GEOFENCE_EXPIRATION_IN_MILLISECONDS)
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
+                            Geofence.GEOFENCE_TRANSITION_EXIT)
+                    .build());
+        }
     }
 
     @Override
@@ -111,26 +166,17 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
                     Manifest.permission.ACCESS_FINE_LOCATION)) {
             } else {
-                ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION );
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION);
             }
+            //adds Geofences if permissions are requested and if user is connected
+            addGeofences();
             return;
         }
-
         startLocationUpdates();
 
         mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-
-        if (mLocation == null) {
-            startLocationUpdates();
-        }
-        if (mLocation != null) {
-
-            // mLatitudeTextView.setText(String.valueOf(mLocation.getLatitude()));
-            //mLongitudeTextView.setText(String.valueOf(mLocation.getLongitude()));
-        } else {
-            Toast.makeText(this, "Location not Detected", Toast.LENGTH_SHORT).show();
-        }
     }
+
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -143,61 +189,61 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         Log.i(TAG, "Connection failed. Error: " + connectionResult.getErrorCode());
     }
 
-//    @Override
-//    public void onLocationChanged(Location location) {
-//        String msg = "Updated Location: " +
-//                Double.toString(location.getLatitude()) + "," +
-//                Double.toString(location.getLongitude());
-//        mLatitudeTextView.setText(String.valueOf(location.getLatitude()));
-//        mLongitudeTextView.setText(String.valueOf(location.getLongitude()));
-//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-//        // You can now create a LatLng Object for use with maps
-//        latLng = new LatLng(location.getLatitude(), location.getLongitude());
-//
-//        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-//        //it was pre written
-//        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-//                .findFragmentById(R.id.map);
-//        mapFragment.getMapAsync(this);
-//    }
+    @Override
+    public void onLocationChanged(Location location) {
+        if (userMarker != null) {
+            userMarker.remove();
+        }
+        MyCoordinates = new LatLng(location.getLatitude(), location.getLongitude());
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        mMap.animateCamera(CameraUpdateFactory.newLatLng(MyCoordinates));
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+    }
 
-    //broadcast receiver is initialized
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        //falls es keinen Broadcastreceiver gibt wird hier einer erstellt
-        if(broadcastReceiver == null){
-            broadcastReceiver = new BroadcastReceiver() {
-
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    //Koordinaten werden im Textview gespeichert (wird später geändert)
-                    //textView.append("\n" +intent.getExtras().get("Coordinates"));
-
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver,new IntentFilter("location_update"));
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //broadcastreceiver wird beendet wenn die App geschlossen wird
-        if(broadcastReceiver != null){
-            unregisterReceiver(broadcastReceiver);
+    }
+
+    private void requestLocation() {
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setPowerRequirement(Criteria.POWER_HIGH);
+        String provider = mLocationManager.getBestProvider(criteria, true);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
         }
+        mLocationManager.requestLocationUpdates(provider, 10000, 10, this);
     }
 
 
 
-    protected void startLocationUpdates() {
-        // Create the location request
-        mLocationRequest = LocationRequest.create()
-                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-                .setInterval(UPDATE_INTERVAL)
-                .setFastestInterval(FASTEST_INTERVAL);
+
+
+
+    protected void startLocationUpdates(){
         // Request location updates
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this,
@@ -206,10 +252,9 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
                 ActivityCompat.requestPermissions( this, new String[]{Manifest.permission.READ_CONTACTS}, MY_PERMISSION_REQUEST_ACCESS_FINE_LOCATION );
             }return;
         }
-//        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
-//                mLocationRequest, this);
         Log.d("reque", "--->>>>");
     }
+
 
     @Override
     protected void onStart() {
@@ -227,36 +272,11 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
         }
     }
 
-
-    private void showAlert() {
-        final AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-        dialog.setTitle("Enable Location")
-                .setMessage("Your Locations Settings is set to 'Off'.\nPlease Enable Location to " +
-                        "use this app")
-                .setPositiveButton("Location Settings", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                        Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                        startActivity(myIntent);
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-
-                    }
-                });
-        dialog.show();
-    }
-
-
     /**
      * Check Permissions for Map and GPS usage.
      * @return boolean
      */
     private boolean requestLocationPermissions() {
-
         Dexter.withActivity(this)
                 .withPermissions(Manifest.permission.ACCESS_FINE_LOCATION,   Manifest.permission.ACCESS_COARSE_LOCATION)
                 .withListener(new MultiplePermissionsListener() {
@@ -287,5 +307,22 @@ public class MainActivityMap extends FragmentActivity implements OnMapReadyCallb
 
         return isPermissions;
 
+    }
+    @Override
+    public void onResult(@NonNull Status status) {
+        if (status.isSuccess()) {
+            Toast.makeText(
+                    this,
+                    "Geofences Added",
+                    Toast.LENGTH_SHORT
+            ).show();
+        } else {
+            // Get the status code for the error and log it using a user-friendly message.
+            Toast.makeText(
+                    this,
+                    "error",
+                    Toast.LENGTH_SHORT
+            ).show();
+        }
     }
 }
