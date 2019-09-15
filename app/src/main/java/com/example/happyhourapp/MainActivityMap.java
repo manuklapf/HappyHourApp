@@ -431,6 +431,10 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             return;
         }
         mLocationManager.requestLocationUpdates(provider, 10000, 10, this);
+        if (MyCoordinates == null) {
+            Location lastKnownLocation = mLocationManager.getLastKnownLocation(provider);
+            MyCoordinates = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+        }
     }
 
 
@@ -552,13 +556,10 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
                 }
             }
         }
-        if (MyCoordinates == null) {
-            MyCoordinates = new LatLng(mLocation.getLatitude(), mLocation.getLongitude());
+        if (MyCoordinates != null) {
+            //reset usermarker
+            userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
         }
-
-        //reset usermarker
-        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
-
     }
 
     @Override
