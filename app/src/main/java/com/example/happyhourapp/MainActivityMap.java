@@ -110,6 +110,24 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             populateGeofenceList();
         }
 
+        //Initialize Weekday Dropdown
+        Spinner spinner = findViewById(R.id.spinner);
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.weekdays_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(this);
+
+        selectedDay = getWeekday();
+
+        if (selectedDay.length() != 0) {
+            int spinnerPosition = adapter.getPosition(selectedDay);
+            spinner.setSelection(spinnerPosition);
+        }
+
         startLocationService();
     }
 
@@ -185,24 +203,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
 
         AppDatabase db = initDatabase();
 
-        //Initialize Weekday Dropdown
-        Spinner spinner = findViewById(R.id.spinner);
-
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.weekdays_array, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        // Apply the adapter to the spinner
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(this);
-
-        selectedDay = getWeekday();
-
-        if (selectedDay.length() != 0) {
-            int spinnerPosition = adapter.getPosition(selectedDay);
-            spinner.setSelection(spinnerPosition);
-        }
-
         //normally database actions wouldn't be executed on the UI thread, but because it's a small one time start operation, we went with it.
         this.happyHours = db.happyHourDAO().loadAllHappyHours();
         this.bars = db.barDAO().loadAllBars();
@@ -217,7 +217,7 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
 
                 //set text of custom window view
                 String snippet =
-                        "Address: " + address + "\n" +
+                                "Address: " + address + "\n" +
                                 "Opening Hours: " + bar.getOpeningHours() + "\n" +
                                 "Features: " + bar.getDescription() + "\n" +
                                 "Happy Hours: " + happyHourText + "\n";
@@ -326,7 +326,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             Log.e(TAG, "moveCamera: NullPointerException: " + e.getMessage());
             return null;
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(latLng));
         return mMarker;
     }
 
@@ -337,7 +336,8 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
         if (happyHours != null) {
             for (HappyHour happyHour : happyHours) {
                 if (happyHour.getBarId() == bar.getBarId() && happyHour.getHappyHourDay().equals(selectedDay)) {
-                    stringBuilder.append("\n" + "Day: " + happyHour.getHappyHourDay() + "\n" +
+                    stringBuilder.append("\n" +
+                            "Day: " + happyHour.getHappyHourDay() + "\n" +
                             "Time: " + happyHour.getHappyHourTime() + "\n" +
                             "Description: " + happyHour.getHappyHourDesc() + "\n"
                     );
@@ -556,6 +556,10 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
                                 "Happy Hours: " + happyHourText;
 
 
+                //reset usermarker
+                userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+
+                //update/add marker
                 Marker mMarker = updateMarker(bar, latLng, "");
 
                 if (mMarker != null) {

@@ -25,7 +25,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
             notification = new CustomNotification(context);
-            notification.show(1, "bar erreicht");
+            notification.show(1, "happy hour bar in your area!");
 
         }
 
