@@ -7,7 +7,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.util.Log;
 
 public class LocationService extends Service {
@@ -39,9 +38,9 @@ public class LocationService extends Service {
             Log.e(TAG, "onProviderDisabled: " + provider);
 
             //flag
-            Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
+            //Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            //i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            //startActivity(i);
         }
 
         @Override

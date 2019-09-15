@@ -8,10 +8,10 @@ import androidx.room.PrimaryKey;
 
 import com.example.happyhourapp.BarLocation;
 
-@Entity(tableName = "bars")
-public class Bars {
+@Entity(tableName = "bar")
+public class Bar {
 
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey
     @ColumnInfo(name = "id")
     private int barId;
 
@@ -24,13 +24,22 @@ public class Bars {
     @Embedded
     private BarLocation location;
 
+    @ColumnInfo(name = "address")
+    private String address;
+
     @ColumnInfo(name = "openingHours")
     private String openingHours;
 
-    //Getters
-    public int getBarId() {
-        return barId;
+    public Bar(int barId, String name, String description, BarLocation location, String openingHours) {
+        this.barId = barId;
+        this.name = name;
+        this.description = description;
+        this.location = location;
+        this.openingHours = openingHours;
     }
+
+    //Getters
+    public int getBarId() { return barId; }
 
     public String getName() {
         return name;
@@ -46,6 +55,10 @@ public class Bars {
 
     public String getOpeningHours() {
         return openingHours;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     //Setters
@@ -67,5 +80,17 @@ public class Bars {
 
     public void setOpeningHours(String openingHours) {
         this.openingHours = openingHours;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    //populate on first run
+    public static Bar[] populateData() {
+        return new Bar[] {
+        new Bar(0, "Coole Bar", "Gemütliches Ambiente in der Altstadt, mit toller Lage und guten Cocktails", new BarLocation(49.018178, 12.096371), "17:00 Uhr - 03:00 Uhr"),
+        new Bar(1, "Coole Bar1", "Gemütliches Ambiente in der Altstadt, mit toller Lage und guten Cocktails 2", new BarLocation(49.018122, 12.105508), "17:00 Uhr - 03:00 Uhr"),
+        };
     }
 }

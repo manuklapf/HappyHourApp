@@ -3,15 +3,23 @@ package com.example.happyhourapp.models;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "happy_hour")
+@Entity(tableName = "happyhour")
 public class HappyHour {
 
-    @PrimaryKey(autoGenerate = true)
+    @PrimaryKey
     private int happyHourId;
     private int barId;
     private String happyHourDay;
     private String happyHourTime;
     private String happyHourDesc;
+
+    public HappyHour(int happyHourId, int barId, String happyHourDay, String happyHourTime, String happyHourDesc) {
+        this.happyHourId = happyHourId;
+        this.barId = barId;
+        this.happyHourDay = happyHourDay;
+        this.happyHourTime = happyHourTime;
+        this.happyHourDesc = happyHourDesc;
+    }
 
 
     //Getters
@@ -56,5 +64,18 @@ public class HappyHour {
     public void setHappyHourDesc(String happyHourDesc) {
         this.happyHourDesc = happyHourDesc;
     }
+
+    //populate on first run
+    public static HappyHour[] populateData() {
+        return new HappyHour[]{
+                new HappyHour(0, 0, "Monday", "20:00 Uhr - 22:00 Uhr", "Vodka-E 2€"),
+                new HappyHour(1, 0, "Tuesday", "21:00 Uhr - 22:00 Uhr", "Vodka-Orange 2€"),
+                new HappyHour(2, 0, "Thursday", "21:00 Uhr - 23:00 Uhr", "Pfeffi 1€"),
+                new HappyHour(3, 1, "Wednesday", "20:00 Uhr - 22:00 Uhr", "Caipi 2€"),
+                new HappyHour(4, 1, "Saturday", "21:00 Uhr - 22:00 Uhr", "Whisky Cola 2€"),
+                new HappyHour(5, 1, "Sunday", "21:00 Uhr - 23:00 Uhr", "Berliner Luft 1€")
+        };
+    }
+
 
 }
