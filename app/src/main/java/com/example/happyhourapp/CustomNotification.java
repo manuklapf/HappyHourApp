@@ -10,13 +10,13 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
 
-public class MyNotification {
+public class CustomNotification {
     private static final String CHANNEL_ID = "com.example.happyhourapp";
 
     private final Context context;
     private final NotificationManager notificationManager;
 
-    public MyNotification(Context appContext) {
+    public CustomNotification(Context appContext) {
         this.context = appContext;
         notificationManager =
                 (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -55,7 +55,7 @@ public class MyNotification {
         PendingIntent notificationPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification notification = nb.setContentTitle("Happy Hour Bar in der nähe")
+        Notification notification = nb.setContentTitle("Happy Hour Bar in der Nähe")
                 .setContentText(content)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(notificationPendingIntent)

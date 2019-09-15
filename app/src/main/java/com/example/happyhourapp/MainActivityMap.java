@@ -27,6 +27,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import com.example.happyhourapp.models.Bar;
 import com.example.happyhourapp.models.HappyHour;
 import com.google.android.gms.common.ConnectionResult;
@@ -51,13 +52,13 @@ import com.karumi.dexter.MultiplePermissionsReport;
 import com.karumi.dexter.PermissionToken;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 
 public class MainActivityMap extends FragmentActivity implements AdapterView.OnItemSelectedListener, OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, ResultCallback<Status> {
@@ -68,8 +69,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
     Marker userMarker;
     private LatLng MyCoordinates;
     private static final String TAG = "MainActivity";
-    private TextView mLatitudeTextView;
-    private TextView mLongitudeTextView;
     private GoogleApiClient mGoogleApiClient;
     private Location mLocation;
     private LocationManager mLocationManager;
@@ -109,24 +108,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             geofencingClient = LocationServices.getGeofencingClient(this);
             mGeofenceList = new ArrayList<Geofence>();
             populateGeofenceList();
-        }
-
-        //Initialize Weekday Dropdown
-        Spinner spinner = (Spinner) findViewById(R.id.spinner);
-
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.weekdays_array, android.R.layout.simple_spinner_item);
-        // Specify the layout to use when the list of choices appears
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-
-        // Apply the adapter to the spinner
-        spinner.setAdapter(adapter);
-        spinner.setOnItemSelectedListener(this);
-
-        selectedDay = getWeekday();
-
-        if (selectedDay.length() != 0) {
-            int spinnerPosition = adapter.getPosition(selectedDay);
-            spinner.setSelection(spinnerPosition);
         }
 
         startLocationService();
@@ -203,6 +184,24 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
         mMap.setInfoWindowAdapter(new CustomInfoWindowAdapter(this));
 
         AppDatabase db = initDatabase();
+
+        //Initialize Weekday Dropdown
+        Spinner spinner = findViewById(R.id.spinner);
+
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this, R.array.weekdays_array, android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+        // Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+        spinner.setOnItemSelectedListener(this);
+
+        selectedDay = getWeekday();
+
+        if (selectedDay.length() != 0) {
+            int spinnerPosition = adapter.getPosition(selectedDay);
+            spinner.setSelection(spinnerPosition);
+        }
 
         //normally database actions wouldn't be executed on the UI thread, but because it's a small one time start operation, we went with it.
         this.happyHours = db.happyHourDAO().loadAllHappyHours();

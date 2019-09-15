@@ -12,7 +12,7 @@ import com.google.android.gms.location.GeofencingEvent;
 public class GeofenceBroadcastReceiver extends BroadcastReceiver {
 
     protected static final String TAG = "GeofenceReceiver";
-    MyNotification notification;
+    CustomNotification notification;
     @Override
     public void onReceive(Context context, Intent intent) {
         //getting Geofence data
@@ -24,7 +24,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         //checks if user entered a Geofenced zone and throws a notification
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
-            notification = new MyNotification(context);
+            notification = new CustomNotification(context);
             notification.show(1, "bar erreicht");
 
         }
