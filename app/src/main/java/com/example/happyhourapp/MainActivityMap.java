@@ -431,10 +431,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             return;
         }
         mLocationManager.requestLocationUpdates(provider, 10000, 10, this);
-        if (MyCoordinates == null) {
-            Location lastKnownLocation = mLocationManager.getLastKnownLocation(provider);
-            MyCoordinates = new LatLng(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
-        }
     }
 
 

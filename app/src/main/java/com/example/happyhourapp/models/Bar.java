@@ -91,6 +91,7 @@ public class Bar {
         return new Bar[] {
         new Bar(0, "Coole Bar", "Gemütliches Ambiente in der Altstadt, mit toller Lage und guten Cocktails", new BarLocation(49.018178, 12.096371), "17:00 Uhr - 03:00 Uhr"),
         new Bar(1, "Coole Bar1", "Gemütliches Ambiente in der Altstadt, mit toller Lage und guten Cocktails 2", new BarLocation(49.018122, 12.105508), "17:00 Uhr - 03:00 Uhr"),
+        new Bar(2, "Coole Bar2", "Gemütliches Ambiente in der Altstadt, mit toller Lage und guten Cocktails 3", new BarLocation(49.018122, 12.105008), "18:00 Uhr - 02:00 Uhr"),
         };
     }
 }

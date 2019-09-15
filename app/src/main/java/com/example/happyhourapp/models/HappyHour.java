@@ -73,7 +73,11 @@ public class HappyHour {
                 new HappyHour(2, 0, "Thursday", "21:00 Uhr - 23:00 Uhr", "Pfeffi 1€"),
                 new HappyHour(3, 1, "Wednesday", "20:00 Uhr - 22:00 Uhr", "Caipi 2€"),
                 new HappyHour(4, 1, "Saturday", "21:00 Uhr - 22:00 Uhr", "Whisky Cola 2€"),
-                new HappyHour(5, 1, "Sunday", "21:00 Uhr - 23:00 Uhr", "Berliner Luft 1€")
+                new HappyHour(5, 1, "Sunday", "21:00 Uhr - 23:00 Uhr", "Berliner Luft 1€"),
+                new HappyHour(6, 2, "Friday", "21:00 Uhr - 22:00 Uhr", "Whisky Cola 2€"),
+                new HappyHour(7, 2, "Sunday", "21:00 Uhr - 23:00 Uhr", "Berliner Luft 1€"),
+                new HappyHour(8, 2, "Saturday", "21:00 Uhr - 22:00 Uhr", "Whisky Cola 2€"),
+                new HappyHour(9, 2, "Monday", "21:00 Uhr - 23:00 Uhr", "Berliner Luft 1€")
         };
     }
 
