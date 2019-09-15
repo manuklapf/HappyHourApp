@@ -391,7 +391,7 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
             userMarker.remove();
         }
         MyCoordinates = new LatLng(location.getLatitude(), location.getLongitude());
-        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
         mMap.animateCamera(CameraUpdateFactory.newLatLng(MyCoordinates));
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
@@ -404,19 +404,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
     @Override
     protected void onResume() {
         super.onResume();
-        //falls es keinen Broadcastreceiver gibt wird hier einer erstellt
-        if (broadcastReceiver == null) {
-            broadcastReceiver = new BroadcastReceiver() {
-
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    //Koordinaten werden im Textview gespeichert (wird später geändert)
-                    //textView.append("\n" +intent.getExtras().get("Coordinates"));
-
-                }
-            };
-        }
-        registerReceiver(broadcastReceiver, new IntentFilter("location_update"));
     }
 
     @Override
@@ -433,10 +420,6 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        //broadcastreceiver wird beendet wenn die App geschlossen wird
-        if (broadcastReceiver != null) {
-            unregisterReceiver(broadcastReceiver);
-        }
     }
 
     private void requestLocation() {
@@ -550,14 +533,10 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
 
                 //set text of custom window view
                 String snippet =
-                        "Address: " + address + "\n" +
+                                "Address: " + address + "\n" +
                                 "Opening Hours: " + bar.getOpeningHours() + "\n" +
                                 "Features: " + bar.getDescription() + "\n" +
                                 "Happy Hours: " + happyHourText;
-
-
-                //reset usermarker
-                userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).title("My Current Position").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
 
                 //update/add marker
                 Marker mMarker = updateMarker(bar, latLng, "");
@@ -573,8 +552,8 @@ public class MainActivityMap extends FragmentActivity implements AdapterView.OnI
                 }
             }
         }
-
-        Toast.makeText(this, sSelected, Toast.LENGTH_SHORT).show();
+        //reset usermarker
+        userMarker = mMap.addMarker(new MarkerOptions().position(MyCoordinates).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
     }
 
     @Override

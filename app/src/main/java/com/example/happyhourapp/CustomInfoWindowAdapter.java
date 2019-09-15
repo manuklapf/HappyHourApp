@@ -27,14 +27,14 @@ public class CustomInfoWindowAdapter implements GoogleMap.InfoWindowAdapter {
         String title = marker.getTitle();
         TextView tvTitle = (TextView) view.findViewById(R.id.title);
 
-        if(!title.equals("")){
+        if (title != null && !title.equals("")) {
             tvTitle.setText(title);
         }
 
         String snippet = marker.getSnippet();
         TextView tvSnippet = (TextView) view.findViewById(R.id.snippet);
 
-        if(!snippet.equals("")){
+        if (snippet != null && !snippet.equals("")) {
             tvSnippet.setText(snippet);
         }
     }

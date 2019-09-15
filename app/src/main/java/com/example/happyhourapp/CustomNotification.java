@@ -55,7 +55,7 @@ public class CustomNotification {
         PendingIntent notificationPendingIntent =
                 stackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification notification = nb.setContentTitle("Happy Hour Bar in der Nähe")
+        Notification notification = nb.setContentTitle("Happy Hour Bar in your Area!")
                 .setContentText(content)
                 .setSmallIcon(R.mipmap.ic_launcher)
                 .setContentIntent(notificationPendingIntent)
